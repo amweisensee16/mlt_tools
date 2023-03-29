@@ -7,12 +7,13 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) #Disables SS
 #You must create the ports before use of this script**INCLUDING INPUT**
 #This script is used for automating alternative phaselegs/breakers
 #Mostly for interal use only works in main library or custom models
+#Will auto convert voltage for single phase/double phase
 
 
 user = str(input("Username: "))
 password = str(input("Password: "))
 auth = HTTPBasicAuth(user,password) #Needed for authetication
-modelname =  "TESTAPIPHASE"
+modelname =  str(input("Model Name: "))
 
 headers = {
   'Content-Type': 'application/json'
@@ -127,8 +128,11 @@ else:
    if(int(bruh) == 2):
       for x in range(1,len(details_json['model']['tabPowerPorts']),3):
          details_json['powerPorts'][x]['phaseLegs'] = "A"
+         details_json['powerPorts'][x]['volts'] = singlephasevolt[inputvoltage]
          details_json['powerPorts'][x+1]['phaseLegs'] = "B"
+         details_json['powerPorts'][x+1]['volts'] = singlephasevolt[inputvoltage]
          details_json['powerPorts'][x+2]['phaseLegs'] = "C"
+         details_json['powerPorts'][x+2]['volts'] = singlephasevolt[inputvoltage]
     
 
 #Can be used for troubleshooting
