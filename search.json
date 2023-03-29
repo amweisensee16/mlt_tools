@@ -1,0 +1,12 @@
+{
+	"columns": [
+		{
+			"displayValue": "APITestingmodel",
+			"filter": {
+				"contains": "APITestingmodel"
+			},
+			"name": "cmbModel"
+		}
+	],
+	"selectedColumns": []
+}
