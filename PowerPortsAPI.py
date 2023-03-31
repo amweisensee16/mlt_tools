@@ -38,10 +38,11 @@ def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
    item_raw = item.text
    item_json = json.loads(item_raw)
    #print(item_json)
-
+   print(item_json)
    modelID = item_json['searchResults']['models'][0]['modelId'] #Pulls ID of first result
    print("ModelID: " + str(modelID))
-
+   if item_json['searchResults']['models'][0]['model'] != modelname:
+      return "No model"
 
    detail = "https://" + ip + "/api/v2/models/" + str(modelID)
    details = requests.request("GET",detail,headers=headers,verify=False,auth=auth)
@@ -108,21 +109,21 @@ def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
                del details_json['powerPorts'][x]['fuseBreakerName']
                del details_json['powerPorts'][x]['fuseBreakerAmps']
             except:
-               print()
+               pass
             details_json['powerPorts'][x+1]['phaseLegs'] = "BC"
             details_json['powerPorts'][x]['volts'] = inputvoltage
             try:
                del details_json['powerPorts'][x+1]['fuseBreakerName']
                del details_json['powerPorts'][x+1]['fuseBreakerAmps']
             except:
-               print()
+               pass
             details_json['powerPorts'][x+2]['phaseLegs'] = "CB"
             details_json['powerPorts'][x]['volts'] = inputvoltage
             try:
                del details_json['powerPorts'][x+2]['fuseBreakerName']
                del details_json['powerPorts'][x+2]['fuseBreakerAmps']
             except:
-               print()
+               pass
       if(legoption == False):
          for x in range(1,len(details_json['powerPorts']),3):
             details_json['powerPorts'][x]['phaseLegs'] = "A"
@@ -131,21 +132,21 @@ def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
                del details_json['powerPorts'][x]['fuseBreakerName']
                del details_json['powerPorts'][x]['fuseBreakerAmps']
             except:
-               print()
+               pass
             details_json['powerPorts'][x+1]['phaseLegs'] = "B"
             details_json['powerPorts'][x+1]['volts'] = singlephasevolt[inputvoltage]
             try:
                del details_json['powerPorts'][x+1]['fuseBreakerName']
                del details_json['powerPorts'][x+1]['fuseBreakerAmps']
             except:
-               print()
+               pass
             details_json['powerPorts'][x+2]['phaseLegs'] = "C"
             details_json['powerPorts'][x+2]['volts'] = singlephasevolt[inputvoltage]
             try:
                del details_json['powerPorts'][x+2]['fuseBreakerName']
                del details_json['powerPorts'][x+2]['fuseBreakerAmps']
             except:
-               print()
+               pass
       
 
    #Can be used for troubleshooting
@@ -196,6 +197,7 @@ file_list_column = [
    ],
 
    [
+      sg.Text("OUTPUT:"),
       sg.Text(size=(15,1),key='-OUTPUT-')
    ],
 
@@ -216,6 +218,17 @@ while True:
       exit()
    if event == "Run" and int(values[4]) % 3 == 0:         
       print(values[0],values[1],values[2],values[3],values[4],values[5])
-      changemodel(values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7])
+      response = changemodel(values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7])
+      if response == "No model":
+         window['-OUTPUT-'].update("Couldn't Find model") 
+      elif response.status_code == 200:
+         window['-OUTPUT-'].update("Changes Made")
+      elif response.status_code == 400:
+         window['-OUTPUT-'].update("Bad Request")  
+      elif response.status_code == 401:
+         window['-OUTPUT-'].update("Authenitcation failed")
+      elif response.status_code == 404:
+         window['-OUTPUT-'].update("Invalid Path")
+      
    else:
       values[4] = ''
