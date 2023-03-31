@@ -8,4 +8,4 @@ Example:
 
 UI:
 
-![image](https://user-images.githubusercontent.com/36317228/228641285-fdaabf6e-e706-40be-9754-c84a993e16bf.png)
+![image](https://user-images.githubusercontent.com/36317228/229138253-eaab307b-d509-4533-bb57-78fe8fff993c.png)
