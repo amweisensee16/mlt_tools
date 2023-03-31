@@ -60,14 +60,14 @@ def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
 
    inputvoltage = details_json['powerPorts'][0]['volts']
 
-   with open("output.json", "w") as outfile:
-      outfile.write(json.dumps(details_json,indent=4))
+   #with open("output.json", "w") as outfile:
+   #   outfile.write(json.dumps(details_json,indent=4))
 
    outputcount = len(details_json['powerPorts'])-1 #count minus input
 
    #For testing
-   with open("example.json", "w") as outfile:
-      outfile.write(json.dumps(details_json,indent=4))
+   #with open("example.json", "w") as outfile:
+   #   outfile.write(json.dumps(details_json,indent=4))
 
    
    previousloc = 1
