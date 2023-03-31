@@ -1,2 +1,5 @@
 output.json
 example.json
+PowerPortsAPI.spec
+/build
+/dist
