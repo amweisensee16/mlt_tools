@@ -29,8 +29,18 @@ def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
       "480": "277"
    }
 
-   f = open("search.json",'r')
-   thing = json.load(f) #Loads search.json file for searching
+   thing ={
+      "columns": [
+         {
+            "displayValue": "APITestingmodel",
+            "filter": {
+               "contains": "APITestingmodel"
+            },
+            "name": "cmbModel"
+         }
+      ],
+      "selectedColumns": []
+   }
    thing['columns'][0]['filter']['contains'] = modelname #Puts ID in json this is the name of item
    thing['columns'][0]['displayValue'] = modelname
 
@@ -38,7 +48,7 @@ def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
    item_raw = item.text
    item_json = json.loads(item_raw)
    #print(item_json)
-   
+
    modelID = item_json['searchResults']['models'][0]['modelId'] #Pulls ID of first result
    print("ModelID: " + str(modelID))
    if item_json['searchResults']['models'][0]['model'] != modelname:
