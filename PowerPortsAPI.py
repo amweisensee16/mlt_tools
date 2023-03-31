@@ -11,14 +11,14 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) #Disables SS
 #Will auto convert voltage for single phase/double phase
 
 
-def changemodel(user,password,modelname,breaker,breakercnt,amps,legoption):
+def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
    auth = HTTPBasicAuth(user,password) #Needed for authetication
 
    headers = {
    'Content-Type': 'application/json'
    } #Basic header
 
-   search = "https://10.34.0.155/api/v2/quicksearch/models?pageNumber=1&pageSize=100"
+   search = "https://" + ip + "/api/v2/quicksearch/models?pageNumber=1&pageSize=100"
 
 
    singlephasevolt = {
@@ -43,7 +43,7 @@ def changemodel(user,password,modelname,breaker,breakercnt,amps,legoption):
    print("ModelID: " + str(modelID))
 
 
-   detail = "https://10.34.0.155/api/v2/models/" + str(modelID)
+   detail = "https://" + ip + "/api/v2/models/" + str(modelID)
    details = requests.request("GET",detail,headers=headers,verify=False,auth=auth)
    details_json = json.loads(details.text)
 
@@ -102,18 +102,50 @@ def changemodel(user,password,modelname,breaker,breakercnt,amps,legoption):
    else:
       if(legoption == True):
          for x in range(1,len(details_json['powerPorts']),3):
-               print(x)
-               details_json['powerPorts'][x]['phaseLegs'] = "AB"
-               details_json['powerPorts'][x+1]['phaseLegs'] = "BC"
-               details_json['powerPorts'][x+2]['phaseLegs'] = "CA"
+            details_json['powerPorts'][x]['phaseLegs'] = "AB"
+            details_json['powerPorts'][x]['volts'] = inputvoltage
+            try:
+               del details_json['powerPorts'][x]['fuseBreakerName']
+               del details_json['powerPorts'][x]['fuseBreakerAmps']
+            except:
+               print()
+            details_json['powerPorts'][x+1]['phaseLegs'] = "BC"
+            details_json['powerPorts'][x]['volts'] = inputvoltage
+            try:
+               del details_json['powerPorts'][x+1]['fuseBreakerName']
+               del details_json['powerPorts'][x+1]['fuseBreakerAmps']
+            except:
+               print()
+            details_json['powerPorts'][x+2]['phaseLegs'] = "CB"
+            details_json['powerPorts'][x]['volts'] = inputvoltage
+            try:
+               del details_json['powerPorts'][x+2]['fuseBreakerName']
+               del details_json['powerPorts'][x+2]['fuseBreakerAmps']
+            except:
+               print()
       if(legoption == False):
-         for x in range(1,len(details_json['model']['tabPowerPorts']),3):
+         for x in range(1,len(details_json['powerPorts']),3):
             details_json['powerPorts'][x]['phaseLegs'] = "A"
             details_json['powerPorts'][x]['volts'] = singlephasevolt[inputvoltage]
+            try:
+               del details_json['powerPorts'][x]['fuseBreakerName']
+               del details_json['powerPorts'][x]['fuseBreakerAmps']
+            except:
+               print()
             details_json['powerPorts'][x+1]['phaseLegs'] = "B"
             details_json['powerPorts'][x+1]['volts'] = singlephasevolt[inputvoltage]
+            try:
+               del details_json['powerPorts'][x+1]['fuseBreakerName']
+               del details_json['powerPorts'][x+1]['fuseBreakerAmps']
+            except:
+               print()
             details_json['powerPorts'][x+2]['phaseLegs'] = "C"
             details_json['powerPorts'][x+2]['volts'] = singlephasevolt[inputvoltage]
+            try:
+               del details_json['powerPorts'][x+2]['fuseBreakerName']
+               del details_json['powerPorts'][x+2]['fuseBreakerAmps']
+            except:
+               print()
       
 
    #Can be used for troubleshooting
@@ -122,7 +154,7 @@ def changemodel(user,password,modelname,breaker,breakercnt,amps,legoption):
 
 
    #Sends the changes that we made
-   modifymodel = "https://10.34.0.155/api/v2/models/" + str(modelID) + "?ReturnDetails=true" +"&proceedOnWarning=false"
+   modifymodel = "https://" + ip + "/api/v2/models/" + str(modelID) + "?ReturnDetails=true" +"&proceedOnWarning=false"
    change =  requests.put(modifymodel,json=details_json, headers=headers,verify=False,auth=auth)
    print(change)
    change_json = json.loads(change.text)
@@ -134,6 +166,9 @@ def changemodel(user,password,modelname,breaker,breakercnt,amps,legoption):
 file_list_column = [
 
    [
+      sg.Text("IP Address"),
+      sg.InputText(size=(20, 1)),
+
       sg.Text("Username"),
       sg.InputText(size=(10, 1)),
 
@@ -181,6 +216,6 @@ while True:
       exit()
    if event == "Run" and int(values[4]) % 3 == 0:         
       print(values[0],values[1],values[2],values[3],values[4],values[5])
-      changemodel(values[0],values[1],values[2],values[3],values[4],values[5],values[6])
+      changemodel(values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7])
    else:
       values[4] = ''
