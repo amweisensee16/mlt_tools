@@ -49,20 +49,22 @@ def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
    item_raw = item.text
    item_json = json.loads(item_raw)
    #print(item_json)
-
-   modelID = item_json['searchResults']['models'][0]['modelId'] #Pulls ID of first result
+   try:
+      modelID = item_json['searchResults']['models'][0]['modelId'] #Pulls ID of first result
+   except:
+      return "No model"
    print("ModelID: " + str(modelID))
    if item_json['searchResults']['models'][0]['model'] != modelname:
       return "No model"
-
+   print("Something")
    detail = "https://" + ip + "/api/v2/models/" + str(modelID)
    details = requests.request("GET",detail,headers=headers,verify=False,auth=auth)
    details_json = json.loads(details.text)
 
    inputvoltage = details_json['powerPorts'][0]['volts']
 
-   #with open("output.json", "w") as outfile:
-   #   outfile.write(json.dumps(details_json,indent=4))
+   with open("output.json", "w") as outfile:
+      outfile.write(json.dumps(details_json,indent=4))
 
    outputcount = len(details_json['powerPorts'])-1 #count minus input
 
@@ -227,7 +229,7 @@ while True:
    event, values = window.read()
    if event == "Exit" or event == sg.WIN_CLOSED:
       sys.exit("Exit Program")
-   if event == "Run" and int(values[4]) % 3 == 0:         
+   if event == "Run" and int(values[5]) % 3 == 0:         
       print(values[0],values[1],values[2],values[3],values[4],values[5])
       response = changemodel(values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7])
       if response == "No model":
@@ -240,6 +242,7 @@ while True:
          window['-OUTPUT-'].update("Authenitcation failed")
       elif response.status_code == 404:
          window['-OUTPUT-'].update("Invalid Path")
-      
+      else:
+         window['-OUTPUT-'].update("Invalid Path")
    else:
       values[4] = ''
