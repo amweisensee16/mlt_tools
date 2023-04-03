@@ -3,6 +3,7 @@ import json
 from requests.auth import HTTPBasicAuth
 import urllib3
 import PySimpleGUI as sg
+import sys
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) #Disables SSL Cert checking
 
 #You must create the ports before use of this script**INCLUDING INPUT**
@@ -225,7 +226,7 @@ while True:
 
    event, values = window.read()
    if event == "Exit" or event == sg.WIN_CLOSED:
-      exit()
+      sys.exit("Exit Program")
    if event == "Run" and int(values[4]) % 3 == 0:         
       print(values[0],values[1],values[2],values[3],values[4],values[5])
       response = changemodel(values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7])
