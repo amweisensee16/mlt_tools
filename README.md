@@ -2,7 +2,7 @@ This script can be used when PDU have an alternating phase leg and circuit break
 
 **PORTS MUST ALREADY BE MADE**
 
-Also will only work on Custom Models if you are not in Main Model Library
+Will only work on Custom Models if you are not in Main Model Library.
 
 Example:
 ![image](https://user-images.githubusercontent.com/36317228/228587716-4dbf93e9-ce55-4f2a-93e5-5cbf6875591f.png)
