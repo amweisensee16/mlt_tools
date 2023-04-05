@@ -11,24 +11,12 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) #Disables SS
 #Mostly for interal use only works in main library or custom models
 #Will auto convert voltage for single phase/double phase
 
-
-def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
-   auth = HTTPBasicAuth(user,password) #Needed for authetication
-
+def searchModel(auth,ip,modelname):
    headers = {
    'Content-Type': 'application/json'
    } #Basic header
 
    search = "https://" + ip + "/api/v2/quicksearch/models?pageNumber=1&pageSize=100"
-
-
-   singlephasevolt = {
-      "208": "120",
-      "380": "220",
-      "400": "230",
-      "415": "415",
-      "480": "277"
-   }
 
    thing ={
       "columns": [
@@ -49,6 +37,36 @@ def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
    item_raw = item.text
    item_json = json.loads(item_raw)
    #print(item_json)
+   return item_json
+
+def getModelInfo(auth,ip,modelID):
+   headers = {
+   'Content-Type': 'application/json'
+   } #Basic header
+   detail = "https://" + ip + "/api/v2/models/" + str(modelID)
+   details = requests.request("GET",detail,headers=headers,verify=False,auth=auth)
+   details_json = json.loads(details.text)
+   return details_json
+
+
+
+def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
+   auth = HTTPBasicAuth(user,password) #Needed for authetication
+
+   headers = {
+   'Content-Type': 'application/json'
+   } #Basic header
+
+   singlephasevolt = {
+      "208": "120",
+      "380": "220",
+      "400": "230",
+      "415": "415",
+      "480": "277"
+   }
+
+   item_json = searchModel(auth,ip,modelname)
+   
    try:
       modelID = item_json['searchResults']['models'][0]['modelId'] #Pulls ID of first result
    except:
@@ -57,10 +75,9 @@ def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
    if item_json['searchResults']['models'][0]['model'] != modelname:
       return "No model"
    print("Something")
-   detail = "https://" + ip + "/api/v2/models/" + str(modelID)
-   details = requests.request("GET",detail,headers=headers,verify=False,auth=auth)
-   details_json = json.loads(details.text)
 
+   details_json = getModelInfo(auth,ip,modelID)
+   
    inputvoltage = details_json['powerPorts'][0]['volts']
 
    with open("output.json", "w") as outfile:
@@ -74,6 +91,8 @@ def changemodel(ip,user,password,modelname,breaker,breakercnt,amps,legoption):
 
    
    previousloc = 1
+
+   #Least messy/indented for loop
 
    #With breakers
    if(breaker == True):
@@ -207,6 +226,18 @@ file_list_column = [
       sg.Radio("Phase Legs: AB, BC, CA","RADI01",default=True),
       sg.Radio("Phase Legs: A, B, C","RADI01",default=False),
 
+   ],
+
+   [
+      sg.Radio("Incrimental(A B C A B C)","RADI01",default=False),
+      sg.Radio("Grouped(A A B B C C): A, B, C","RADI01",default=True),
+
+   ],
+
+   [
+      sg.Text("If Grouped:"),
+      sg.Text("Group Size (2: A A, 3: A A A)"),
+      sg.InputText(size=(10, 1))
    ],
 
    [
