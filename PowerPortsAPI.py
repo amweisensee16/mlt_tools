@@ -88,8 +88,8 @@ def incrementModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption)
    
    inputvoltage = details_json['powerPorts'][0]['volts']
 
-   with open("output.json", "w") as outfile:
-      outfile.write(json.dumps(details_json,indent=4))
+   #with open("output.json", "w") as outfile:
+   #   outfile.write(json.dumps(details_json,indent=4))
 
    outputcount = len(details_json['powerPorts'])-1 #count minus input
 
@@ -220,8 +220,8 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
    
    inputvoltage = details_json['powerPorts'][0]['volts']
 
-   with open("output.json", "w") as outfile:
-      outfile.write(json.dumps(details_json,indent=4))
+   #with open("output.json", "w") as outfile:
+   #   outfile.write(json.dumps(details_json,indent=4))
 
    outputcount = len(details_json['powerPorts']) #count minus input
 
@@ -284,8 +284,8 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
          except:
             pass
 
-   with open("example.json", "w") as outfile:
-      outfile.write(json.dumps(details_json,indent=4))
+   #with open("example.json", "w") as outfile:
+   #   outfile.write(json.dumps(details_json,indent=4))
 
    #Sends the changes that we made
    change = modifyModel(ip,auth,modelID,details_json)
