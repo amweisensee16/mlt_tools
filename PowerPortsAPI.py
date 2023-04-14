@@ -10,6 +10,11 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) #Disables SS
 #This script is used for automating alternative phaselegs/breakers
 #Mostly for interal use only works in main library or custom models
 #Will auto convert voltage for single phase/double phase
+#Also now works for grouped phase legs
+
+#TODO: Add grouping for breakers
+#TODO: Allow for port creation
+
 
 def searchModel(auth,ip,modelname):
    headers = {
