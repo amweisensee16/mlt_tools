@@ -236,6 +236,68 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
    previousloc = 1
    #Least messy/indented for loop
    #With breakers
+   details_json = groupLeg(legoption,details_json,amps,singlephasevolt)
+
+   loopcount = int(int(breakercnt)/3)
+   smallloopsize = int(len(details_json['powerPorts'])/loopcount)
+   #Does the circuit Breakers
+   #TODO Change to grouping
+   if(breaker == True):
+      for x in range(1,outputcount,smallloopsize):
+         b = int(((x/smallloopsize)*3)+1)
+         for y in range(x,outputcount):
+            if(details_json['powerPorts'][y]['phaseLegs'] == "AB" or details_json['powerPorts'][y]['phaseLegs'] == "A"):
+               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b).zfill(2)
+            if(details_json['powerPorts'][y]['phaseLegs'] == "BC" or details_json['powerPorts'][y]['phaseLegs'] == "B"):
+               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+1).zfill(2)
+            if(details_json['powerPorts'][y]['phaseLegs'] == "CA" or details_json['powerPorts'][y]['phaseLegs'] == "C"):
+               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+2).zfill(2)
+   if(breaker == False):
+      for x in range(1,outputcount):
+         try:
+            del details_json['powerPorts'][x]['fuseBreakerName']
+            del details_json['powerPorts'][x]['fuseBreakerAmps']
+         except:
+            pass
+
+   #with open("example.json", "w") as outfile:
+   #   outfile.write(json.dumps(details_json,indent=4))
+
+   #Sends the changes that we made
+   change = modifyModel(ip,auth,modelID,details_json)
+   return change
+
+def incLeg(legoption,details_json,amps,singlephasevolt):
+   inputvoltage = details_json['powerPorts'][0]['volts']
+   outputcount = len(details_json['powerPorts'])
+   if(legoption == True):
+      for x in range(1,outputcount,3):
+         details_json['powerPorts'][x]['phaseLegs'] = "AB"
+         details_json['powerPorts'][x]['fuseBreakerAmps'] = amps
+         details_json['powerPorts'][x]['volts'] = inputvoltage
+         details_json['powerPorts'][x+1]['phaseLegs'] = "BC"
+         details_json['powerPorts'][x+1]['fuseBreakerAmps'] = amps
+         details_json['powerPorts'][x+1]['volts'] = inputvoltage
+         details_json['powerPorts'][x+2]['phaseLegs'] = "CA"
+         details_json['powerPorts'][x+2]['fuseBreakerAmps'] = amps
+         details_json['powerPorts'][x+2]['volts'] = inputvoltage
+   else:
+      for x in range(1,outputcount,3):
+         details_json['powerPorts'][x]['phaseLegs'] = "A"
+         details_json['powerPorts'][x]['fuseBreakerAmps'] = amps
+         details_json['powerPorts'][x]['volts'] = singlephasevolt[inputvoltage]
+         details_json['powerPorts'][x+1]['phaseLegs'] = "B"
+         details_json['powerPorts'][x+1]['fuseBreakerAmps'] = amps
+         details_json['powerPorts'][x+1]['volts'] = singlephasevolt[inputvoltage]
+         details_json['powerPorts'][x+2]['phaseLegs'] = "C"
+         details_json['powerPorts'][x+2]['fuseBreakerAmps'] = amps
+         details_json['powerPorts'][x+2]['volts'] = singlephasevolt[inputvoltage]
+   return details_json
+
+
+def groupLeg(legoption,details_json,groupsize,amps,singlephasevolt):
+   inputvoltage = details_json['powerPorts'][0]['volts']
+   outputcount = len(details_json['powerPorts'])
    if(legoption==True):
       #Makes Phases/voltage
       for x in range(1,outputcount,groupsize*3):
@@ -267,36 +329,26 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
             details_json['powerPorts'][y]['phaseLegs'] = "C"
             details_json['powerPorts'][y]['fuseBreakerAmps'] = amps
             details_json['powerPorts'][y]['volts'] = singlephasevolt[inputvoltage]
+   return details_json
 
-   loopcount = int(int(breakercnt)/3)
-   smallloopsize = int(len(details_json['powerPorts'])/loopcount)
-   #Does the circuit Breakers
+def incBreaker(breaker,details_json,amps):
+   outputcount = len(details_json['powerPorts'])
    if(breaker == True):
-      for x in range(1,outputcount,smallloopsize):
-         b = int(((x/smallloopsize)*3)+1)
-         for y in range(x,outputcount):
-            if(details_json['powerPorts'][y]['phaseLegs'] == "AB" or details_json['powerPorts'][y]['phaseLegs'] == "A"):
-               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b).zfill(2)
-            if(details_json['powerPorts'][y]['phaseLegs'] == "BC" or details_json['powerPorts'][y]['phaseLegs'] == "B"):
-               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+1).zfill(2)
-            if(details_json['powerPorts'][y]['phaseLegs'] == "CA" or details_json['powerPorts'][y]['phaseLegs'] == "C"):
-               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+2).zfill(2)
-   if(breaker == False):
-      for x in range(1,outputcount):
-         try:
-            del details_json['powerPorts'][x]['fuseBreakerName']
-            del details_json['powerPorts'][x]['fuseBreakerAmps']
-         except:
-            pass
+      for x in range(1,outputcount,3):
+         bnum = int((x-1)/3)
+         details_json['powerPorts'][x]['fuseBreakerName'] = "CB"+str(bnum).zfill(2)
+         details_json['powerPorts'][x]['fuseBreakerAmps'] = amps
+         details_json['powerPorts'][x+1]['fuseBreakerName'] = "CB"+str(bnum+1).zfill(2)
+         details_json['powerPorts'][x+1]['fuseBreakerAmps'] = amps
+         details_json['powerPorts'][x+2]['fuseBreakerName'] = "CB"+str(bnum+2).zfill(2)
+         details_json['powerPorts'][x+2]['fuseBreakerAmps'] = amps
+   else:
+      for x in range(1,outputcount,3):
+         
+   return details_json
 
-   #with open("example.json", "w") as outfile:
-   #   outfile.write(json.dumps(details_json,indent=4))
-
-   #Sends the changes that we made
-   change = modifyModel(ip,auth,modelID,details_json)
-   return change
-
-
+#def groupBreaker(legoption):
+   
 
 file_list_column = [
 
@@ -357,6 +409,7 @@ file_list_column = [
 window = sg.Window("Model PDU Phase Breaker Fix",file_list_column)
 
 #Makes up event statements
+#TODO: Allow turning off modifying phase or breaker
 while True:
 
    event, values = window.read()
