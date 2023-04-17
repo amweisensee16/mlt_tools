@@ -90,22 +90,7 @@ def incrementModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption)
    print("Something")
 
    details_json = getModelInfo(auth,ip,modelID)
-   
-   inputvoltage = details_json['powerPorts'][0]['volts']
 
-   #with open("output.json", "w") as outfile:
-   #   outfile.write(json.dumps(details_json,indent=4))
-
-   outputcount = len(details_json['powerPorts'])-1 #count minus input
-
-   #For testing
-   #with open("example.json", "w") as outfile:
-   #   outfile.write(json.dumps(details_json,indent=4))
-
-   
-   previousloc = 1
-   #Least messy/indented for loop
-   #With breakers
    details_json = incLeg(legoption,details_json,singlephasevolt)
 
    details_json = followBreaker(breaker,details_json,breakercnt)
@@ -141,8 +126,6 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
    print("Something")
 
    details_json = getModelInfo(auth,ip,modelID)
-   
-   inputvoltage = details_json['powerPorts'][0]['volts']
 
    #with open("output.json", "w") as outfile:
    #   outfile.write(json.dumps(details_json,indent=4))
@@ -153,16 +136,10 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
       print(outputcount,' ',groupsize)
       return "Invalid Group Size"
 
-   #For testing
-   
-   print(groupsize)
-   previousloc = 1
    #Least messy/indented for loop
    #With breakers
    details_json = groupLeg(legoption,details_json,groupsize,amps,singlephasevolt)
 
-   
-   
    #Does the circuit Breakers
    #TODO Change to grouping
 
