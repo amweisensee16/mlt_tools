@@ -106,91 +106,10 @@ def incrementModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption)
    previousloc = 1
    #Least messy/indented for loop
    #With breakers
-   if(breaker == True):
-      loopcount = int(int(breakercnt)/3)
-      smallloopsize = int(len(details_json['powerPorts'])/loopcount)
-      for y in range(0,loopcount):
-         print(y)
-         if(legoption == True):
-            for x in range(previousloc,(smallloopsize*y)+smallloopsize,3):
-               details_json['powerPorts'][x]['phaseLegs'] = "AB"
-               details_json['powerPorts'][x]['fuseBreakerName'] = "CB"+str(((y*3)+1)).zfill(2)
-               details_json['powerPorts'][x]['fuseBreakerAmps'] = amps
-               details_json['powerPorts'][x]['volts'] = inputvoltage
-               details_json['powerPorts'][x+1]['phaseLegs'] = "BC"
-               details_json['powerPorts'][x+1]['fuseBreakerName'] = "CB"+str(((y*3)+2)).zfill(2)
-               details_json['powerPorts'][x+1]['fuseBreakerAmps'] = amps
-               details_json['powerPorts'][x+1]['volts'] = inputvoltage
-               details_json['powerPorts'][x+2]['phaseLegs'] = "CA"
-               details_json['powerPorts'][x+2]['fuseBreakerName'] = "CB"+str(((y*3)+3)).zfill(2)
-               details_json['powerPorts'][x+2]['fuseBreakerAmps'] = amps
-               details_json['powerPorts'][x+2]['volts'] = inputvoltage
-            previousloc += smallloopsize 
-         if(legoption == False):
-            for x in range(previousloc,(smallloopsize*y)+smallloopsize,3):
-               details_json['powerPorts'][x]['phaseLegs'] = "A"
-               details_json['powerPorts'][x]['fuseBreakerName'] = "CB"+str(((y*3)+1)).zfill(2)
-               details_json['powerPorts'][x]['fuseBreakerAmps'] = amps
-               details_json['powerPorts'][x]['volts'] = singlephasevolt[inputvoltage]
-               details_json['powerPorts'][x+1]['phaseLegs'] = "B"
-               details_json['powerPorts'][x+1]['fuseBreakerName'] = "CB"+str(((y*3)+2)).zfill(2)
-               details_json['powerPorts'][x+1]['fuseBreakerAmps'] = amps
-               details_json['powerPorts'][x+1]['volts'] = singlephasevolt[inputvoltage]
-               details_json['powerPorts'][x+2]['phaseLegs'] = "C"
-               details_json['powerPorts'][x+2]['fuseBreakerName'] = "CB"+str(((y*3)+3)).zfill(2)
-               details_json['powerPorts'][x+2]['fuseBreakerAmps'] = amps
-               details_json['powerPorts'][x+2]['volts'] = singlephasevolt[inputvoltage]
-            previousloc += smallloopsize 
+   details_json = incLeg(legoption,details_json,singlephasevolt)
 
-   #Without breakers
-   else:
-      if(legoption == True):
-         for x in range(1,len(details_json['powerPorts']),3):
-            details_json['powerPorts'][x]['phaseLegs'] = "AB"
-            details_json['powerPorts'][x]['volts'] = inputvoltage
-            try:
-               del details_json['powerPorts'][x]['fuseBreakerName']
-               del details_json['powerPorts'][x]['fuseBreakerAmps']
-            except:
-               pass
-            details_json['powerPorts'][x+1]['phaseLegs'] = "BC"
-            details_json['powerPorts'][x]['volts'] = inputvoltage
-            try:
-               del details_json['powerPorts'][x+1]['fuseBreakerName']
-               del details_json['powerPorts'][x+1]['fuseBreakerAmps']
-            except:
-               pass
-            details_json['powerPorts'][x+2]['phaseLegs'] = "CB"
-            details_json['powerPorts'][x]['volts'] = inputvoltage
-            try:
-               del details_json['powerPorts'][x+2]['fuseBreakerName']
-               del details_json['powerPorts'][x+2]['fuseBreakerAmps']
-            except:
-               pass
-      if(legoption == False):
-         for x in range(1,len(details_json['powerPorts']),3):
-            details_json['powerPorts'][x]['phaseLegs'] = "A"
-            details_json['powerPorts'][x]['volts'] = singlephasevolt[inputvoltage]
-            try:
-               del details_json['powerPorts'][x]['fuseBreakerName']
-               del details_json['powerPorts'][x]['fuseBreakerAmps']
-            except:
-               pass
-            details_json['powerPorts'][x+1]['phaseLegs'] = "B"
-            details_json['powerPorts'][x+1]['volts'] = singlephasevolt[inputvoltage]
-            try:
-               del details_json['powerPorts'][x+1]['fuseBreakerName']
-               del details_json['powerPorts'][x+1]['fuseBreakerAmps']
-            except:
-               pass
-            details_json['powerPorts'][x+2]['phaseLegs'] = "C"
-            details_json['powerPorts'][x+2]['volts'] = singlephasevolt[inputvoltage]
-            try:
-               del details_json['powerPorts'][x+2]['fuseBreakerName']
-               del details_json['powerPorts'][x+2]['fuseBreakerAmps']
-            except:
-               pass
-
+   details_json = followBreaker(breaker,details_json,breakercnt)
+   
    #Sends the changes that we made
    change = modifyModel(ip,auth,modelID,details_json)
    return change
@@ -211,7 +130,7 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
    }
 
    item_json = searchModel(auth,ip,modelname)
-   
+   amps = int(amps)
    try:
       modelID = item_json['searchResults']['models'][0]['modelId'] #Pulls ID of first result
    except:
@@ -228,7 +147,11 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
    #with open("output.json", "w") as outfile:
    #   outfile.write(json.dumps(details_json,indent=4))
 
-   outputcount = len(details_json['powerPorts']) #count minus input
+   outputcount = len(details_json['powerPorts'])-1 #count minus input
+
+   if outputcount%groupsize != 0:
+      print(outputcount,' ',groupsize)
+      return "Invalid Group Size"
 
    #For testing
    
@@ -236,29 +159,14 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
    previousloc = 1
    #Least messy/indented for loop
    #With breakers
-   details_json = groupLeg(legoption,details_json,amps,singlephasevolt)
+   details_json = groupLeg(legoption,details_json,groupsize,amps,singlephasevolt)
 
-   loopcount = int(int(breakercnt)/3)
-   smallloopsize = int(len(details_json['powerPorts'])/loopcount)
+   
+   
    #Does the circuit Breakers
    #TODO Change to grouping
-   if(breaker == True):
-      for x in range(1,outputcount,smallloopsize):
-         b = int(((x/smallloopsize)*3)+1)
-         for y in range(x,outputcount):
-            if(details_json['powerPorts'][y]['phaseLegs'] == "AB" or details_json['powerPorts'][y]['phaseLegs'] == "A"):
-               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b).zfill(2)
-            if(details_json['powerPorts'][y]['phaseLegs'] == "BC" or details_json['powerPorts'][y]['phaseLegs'] == "B"):
-               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+1).zfill(2)
-            if(details_json['powerPorts'][y]['phaseLegs'] == "CA" or details_json['powerPorts'][y]['phaseLegs'] == "C"):
-               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+2).zfill(2)
-   if(breaker == False):
-      for x in range(1,outputcount):
-         try:
-            del details_json['powerPorts'][x]['fuseBreakerName']
-            del details_json['powerPorts'][x]['fuseBreakerAmps']
-         except:
-            pass
+
+   details_json = followBreaker(breaker,details_json,breakercnt)
 
    #with open("example.json", "w") as outfile:
    #   outfile.write(json.dumps(details_json,indent=4))
@@ -267,30 +175,24 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
    change = modifyModel(ip,auth,modelID,details_json)
    return change
 
-def incLeg(legoption,details_json,amps,singlephasevolt):
+def incLeg(legoption,details_json,singlephasevolt):
    inputvoltage = details_json['powerPorts'][0]['volts']
    outputcount = len(details_json['powerPorts'])
    if(legoption == True):
       for x in range(1,outputcount,3):
          details_json['powerPorts'][x]['phaseLegs'] = "AB"
-         details_json['powerPorts'][x]['fuseBreakerAmps'] = amps
          details_json['powerPorts'][x]['volts'] = inputvoltage
          details_json['powerPorts'][x+1]['phaseLegs'] = "BC"
-         details_json['powerPorts'][x+1]['fuseBreakerAmps'] = amps
          details_json['powerPorts'][x+1]['volts'] = inputvoltage
          details_json['powerPorts'][x+2]['phaseLegs'] = "CA"
-         details_json['powerPorts'][x+2]['fuseBreakerAmps'] = amps
          details_json['powerPorts'][x+2]['volts'] = inputvoltage
    else:
       for x in range(1,outputcount,3):
          details_json['powerPorts'][x]['phaseLegs'] = "A"
-         details_json['powerPorts'][x]['fuseBreakerAmps'] = amps
          details_json['powerPorts'][x]['volts'] = singlephasevolt[inputvoltage]
          details_json['powerPorts'][x+1]['phaseLegs'] = "B"
-         details_json['powerPorts'][x+1]['fuseBreakerAmps'] = amps
          details_json['powerPorts'][x+1]['volts'] = singlephasevolt[inputvoltage]
          details_json['powerPorts'][x+2]['phaseLegs'] = "C"
-         details_json['powerPorts'][x+2]['fuseBreakerAmps'] = amps
          details_json['powerPorts'][x+2]['volts'] = singlephasevolt[inputvoltage]
    return details_json
 
@@ -335,7 +237,7 @@ def incBreaker(breaker,details_json,amps):
    outputcount = len(details_json['powerPorts'])
    if(breaker == True):
       for x in range(1,outputcount,3):
-         bnum = int((x-1)/3)
+         bnum = int(x/3)
          details_json['powerPorts'][x]['fuseBreakerName'] = "CB"+str(bnum).zfill(2)
          details_json['powerPorts'][x]['fuseBreakerAmps'] = amps
          details_json['powerPorts'][x+1]['fuseBreakerName'] = "CB"+str(bnum+1).zfill(2)
@@ -343,8 +245,35 @@ def incBreaker(breaker,details_json,amps):
          details_json['powerPorts'][x+2]['fuseBreakerName'] = "CB"+str(bnum+2).zfill(2)
          details_json['powerPorts'][x+2]['fuseBreakerAmps'] = amps
    else:
-      for x in range(1,outputcount,3):
-         
+      for x in range(1,outputcount):
+         try:
+            del details_json['powerPorts'][x]['fuseBreakerName']
+            del details_json['powerPorts'][x]['fuseBreakerAmps']
+         except:
+            pass
+   return details_json
+
+def followBreaker(breaker,details_json,breakercnt):
+   outputcount = len(details_json['powerPorts'])
+   loopcount = int(int(breakercnt)/3)
+   smallloopsize = int(len(details_json['powerPorts'])/loopcount)
+   if(breaker == True):
+      for x in range(1,outputcount,smallloopsize):
+         b = int(((x/smallloopsize)*3)+1)
+         for y in range(x,outputcount):
+            if(details_json['powerPorts'][y]['phaseLegs'] == "AB" or details_json['powerPorts'][y]['phaseLegs'] == "A"):
+               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b).zfill(2)
+            if(details_json['powerPorts'][y]['phaseLegs'] == "BC" or details_json['powerPorts'][y]['phaseLegs'] == "B"):
+               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+1).zfill(2)
+            if(details_json['powerPorts'][y]['phaseLegs'] == "CA" or details_json['powerPorts'][y]['phaseLegs'] == "C"):
+               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+2).zfill(2)
+   if(breaker == False):
+      for x in range(1,outputcount):
+         try:
+            del details_json['powerPorts'][x]['fuseBreakerName']
+            del details_json['powerPorts'][x]['fuseBreakerAmps']
+         except:
+            pass
    return details_json
 
 #def groupBreaker(legoption):
@@ -423,6 +352,8 @@ while True:
          response = groupModel(values['ip'],values['user'],values['password'],values['modelname'],values['breaker'],values['breakercount'],values['amps'],values['phaselegs'],int(values['-GROUPSIZE-']))
       if response == "No model":
          window['-OUTPUT-'].update("Couldn't Find model") 
+      elif response == "Invalid Group Size":
+         window['-OUTPUT-'].update("Invalid Group Size") 
       elif response.status_code == 200:
          window['-OUTPUT-'].update("Changes Made")
       elif response.status_code == 400:
