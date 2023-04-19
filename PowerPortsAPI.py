@@ -57,7 +57,7 @@ def modifyModel(ip,auth,modelID,json):
    headers = {
    'Content-Type': 'application/json'
    } #Basic header
-   modifymodel = "https://" + ip + "/api/v2/models/" + str(modelID) + "?ReturnDetails=true" +"&proceedOnWarning=false"
+   modifymodel = "https://" + ip + "/api/v2/models/" + str(modelID) + "?ReturnDetails=true" +"&proceedOnWarning=true"
    change =  requests.put(modifymodel,json=json, headers=headers,verify=False,auth=auth)
    return change
 
@@ -74,7 +74,7 @@ def incrementModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption)
       "208": "120",
       "380": "220",
       "400": "230",
-      "415": "415",
+      "415": "240",
       "480": "277"
    }
 
@@ -110,7 +110,60 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
       "208": "120",
       "380": "220",
       "400": "230",
-      "415": "415",
+      "415": "240",
+      "480": "277"
+   }
+
+   item_json = searchModel(auth,ip,modelname)
+   amps = int(amps)
+   try:
+      modelID = item_json['searchResults']['models'][0]['modelId'] #Pulls ID of first result
+   except:
+      return "No model"
+   print("ModelID: " + str(modelID))
+   if item_json['searchResults']['models'][0]['model'] != modelname:
+      return "No model"
+   print("Something")
+
+   details_json = getModelInfo(auth,ip,modelID)
+
+   with open("output.json", "w") as outfile:
+      outfile.write(json.dumps(details_json,indent=4))
+
+   outputcount = len(details_json['powerPorts'])-1 #count minus input
+
+   if outputcount%groupsize != 0:
+      print(outputcount,' ',groupsize)
+      return "Invalid Group Size"
+
+   #Least messy/indented for loop
+   #With breakers
+   details_json = groupLeg(legoption,details_json,groupsize,amps,singlephasevolt)
+
+   #Does the circuit Breakers
+   #TODO Change to grouping
+
+   details_json = followBreaker(breaker,details_json,breakercnt)
+
+   #with open("example.json", "w") as outfile:
+   #   outfile.write(json.dumps(details_json,indent=4))
+
+   #Sends the changes that we made
+   change = modifyModel(ip,auth,modelID,details_json)
+   return change
+
+def groupSinglePhase(ip,user,password,modelname,breaker,breakercnt,amps,groupsize):
+   auth = HTTPBasicAuth(user,password) #Needed for authetication
+
+   headers = {
+   'Content-Type': 'application/json'
+   } #Basic header
+
+   singlephasevolt = {
+      "208": "120",
+      "380": "220",
+      "400": "230",
+      "415": "240",
       "480": "277"
    }
 
@@ -136,14 +189,7 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
       print(outputcount,' ',groupsize)
       return "Invalid Group Size"
 
-   #Least messy/indented for loop
-   #With breakers
-   details_json = groupLeg(legoption,details_json,groupsize,amps,singlephasevolt)
-
-   #Does the circuit Breakers
-   #TODO Change to grouping
-
-   details_json = followBreaker(breaker,details_json,breakercnt)
+   details_json = groupBreaker(details_json,groupsize,amps)
 
    #with open("example.json", "w") as outfile:
    #   outfile.write(json.dumps(details_json,indent=4))
@@ -151,6 +197,50 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
    #Sends the changes that we made
    change = modifyModel(ip,auth,modelID,details_json)
    return change
+
+def incSinglePhase(ip,user,password,modelname,breaker,breakercnt,amps):
+   auth = HTTPBasicAuth(user,password) #Needed for authetication
+
+   headers = {
+   'Content-Type': 'application/json'
+   } #Basic header
+
+   singlephasevolt = {
+      "208": "120",
+      "380": "220",
+      "400": "230",
+      "415": "240",
+      "480": "277"
+   }
+
+   item_json = searchModel(auth,ip,modelname)
+   amps = int(amps)
+   try:
+      modelID = item_json['searchResults']['models'][0]['modelId'] #Pulls ID of first result
+   except:
+      return "No model"
+   print("ModelID: " + str(modelID))
+   if item_json['searchResults']['models'][0]['model'] != modelname:
+      return "No model"
+   print("SingleInc")
+
+   details_json = getModelInfo(auth,ip,modelID)
+
+   #with open("output.json", "w") as outfile:
+   #   outfile.write(json.dumps(details_json,indent=4))
+
+   outputcount = len(details_json['powerPorts'])-1 #count minus input
+
+   details_json = incBreaker(breaker,details_json,amps)
+
+   with open("example.json", "w") as outfile:
+      outfile.write(json.dumps(details_json,indent=4))
+
+   #Sends the changes that we made
+   change = modifyModel(ip,auth,modelID,details_json)
+   return change
+
+
 
 def incLeg(legoption,details_json,singlephasevolt):
    inputvoltage = details_json['powerPorts'][0]['volts']
@@ -172,7 +262,6 @@ def incLeg(legoption,details_json,singlephasevolt):
          details_json['powerPorts'][x+2]['phaseLegs'] = "C"
          details_json['powerPorts'][x+2]['volts'] = singlephasevolt[inputvoltage]
    return details_json
-
 
 def groupLeg(legoption,details_json,groupsize,amps,singlephasevolt):
    inputvoltage = details_json['powerPorts'][0]['volts']
@@ -210,18 +299,24 @@ def groupLeg(legoption,details_json,groupsize,amps,singlephasevolt):
             details_json['powerPorts'][y]['volts'] = singlephasevolt[inputvoltage]
    return details_json
 
-def incBreaker(breaker,details_json,amps):
+
+#Needs fix
+def incBreaker(breaker,details_json,amps,breakercnt):
    outputcount = len(details_json['powerPorts'])
+   loopcount = int(int(breakercnt)/3)
+   smallloopsize = int(len(details_json['powerPorts'])/loopcount)
    if(breaker == True):
-      for x in range(1,outputcount,3):
-         bnum = int(x/3)
-         details_json['powerPorts'][x]['fuseBreakerName'] = "CB"+str(bnum).zfill(2)
-         details_json['powerPorts'][x]['fuseBreakerAmps'] = amps
-         details_json['powerPorts'][x+1]['fuseBreakerName'] = "CB"+str(bnum+1).zfill(2)
-         details_json['powerPorts'][x+1]['fuseBreakerAmps'] = amps
-         details_json['powerPorts'][x+2]['fuseBreakerName'] = "CB"+str(bnum+2).zfill(2)
-         details_json['powerPorts'][x+2]['fuseBreakerAmps'] = amps
-   else:
+      for x in range(1,outputcount,smallloopsize):
+         b = int(((x/smallloopsize)*3)+1)
+         for y in range(x,outputcount):
+            if(details_json['powerPorts'][y]['phaseLegs'] == "AB" or details_json['powerPorts'][y]['phaseLegs'] == "A"):
+               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b).zfill(2)
+               details_json['powerPorts'][y]['fuseBreakerAmps'] = amps
+            if(details_json['powerPorts'][y]['phaseLegs'] == "BC" or details_json['powerPorts'][y]['phaseLegs'] == "B"):
+               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+1).zfill(2)
+            if(details_json['powerPorts'][y]['phaseLegs'] == "CA" or details_json['powerPorts'][y]['phaseLegs'] == "C"):
+               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+2).zfill(2)
+   if(breaker == False):
       for x in range(1,outputcount):
          try:
             del details_json['powerPorts'][x]['fuseBreakerName']
@@ -253,8 +348,17 @@ def followBreaker(breaker,details_json,breakercnt):
             pass
    return details_json
 
-#def groupBreaker(legoption):
-   
+def groupBreaker(details_json,groupsize,amps):
+   inputvoltage = details_json['powerPorts'][0]['volts']
+   outputcount = len(details_json['powerPorts'])
+   #Makes Phases/voltage
+   for x in range(1,outputcount,groupsize):
+      b = int(x/groupsize)
+      for y in range(x,x+groupsize):
+         details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b).zfill(2)
+         details_json['powerPorts'][y]['fuseBreakerAmps'] = amps
+         details_json['powerPorts'][y]['volts'] = inputvoltage
+   return details_json
 
 file_list_column = [
 
@@ -289,7 +393,7 @@ file_list_column = [
    ],
 
    [
-      sg.Radio("Incrimental(A B C A B C)","RADI02",default=False,key='incr/group'),
+      sg.Radio("Incremental(A B C A B C)","RADI02",default=False,key='incr/group'),
       sg.Radio("Grouped(A A B B C C)","RADI02",default=True),
 
    ],
@@ -298,6 +402,18 @@ file_list_column = [
       sg.Text("If Grouped:"),
       sg.Text("Group Size (2: A A, 3: A A A)"),
       sg.InputText(size=(10, 1),key = '-GROUPSIZE-')
+   ],
+
+   [
+      sg.Text("Single Phase:"),
+      sg.Checkbox("Is singlephase",default=False,key='singlephase')
+   ],
+
+   [
+      sg.Text("If Single Phase & Has Breaker"),
+      sg.Radio("Incremental(CB01,CB02,CB03)","RADI03",default=True,key='incr/group/single'),
+      sg.Radio("Grouped(A A B B C C)","RADI03",default=False),
+      
    ],
 
    [
@@ -322,8 +438,12 @@ while True:
    if event == "Exit" or event == sg.WIN_CLOSED:
       sys.exit("Exit Program")
    if event == "Run" and int(values['breakercount']) % 3 == 0:
-      if(values['incr/group'] == True):
+      if(values['incr/group'] == True and values['singlephase'] == False):
          response = incrementModel(values['ip'],values['user'],values['password'],values['modelname'],values['breaker'],values['breakercount'],values['amps'],values['phaselegs'])
+      elif(values['singlephase'] == True and values['incr/group/single'] == True):
+         response = incSinglePhase(values['ip'],values['user'],values['password'],values['modelname'],values['breaker'],values['breakercount'],values['amps'])
+      elif(values['singlephase'] == True and values['incr/group/single'] == False):
+         response = groupSinglePhase(values['ip'],values['user'],values['password'],values['modelname'],values['breaker'],values['breakercount'],values['amps'],int(values['-GROUPSIZE-']))
       else:
          #groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,groupsize):
          response = groupModel(values['ip'],values['user'],values['password'],values['modelname'],values['breaker'],values['breakercount'],values['amps'],values['phaselegs'],int(values['-GROUPSIZE-']))
