@@ -12,7 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) #Disables SS
 #Will auto convert voltage for single phase/double phase
 #Also now works for grouped phase legs
 
-#TODO: Add grouping for breakers
+#TODO: Have program check input phase type
 #TODO: Allow for port creation
 
 
@@ -127,8 +127,8 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
 
    details_json = getModelInfo(auth,ip,modelID)
 
-   with open("output.json", "w") as outfile:
-      outfile.write(json.dumps(details_json,indent=4))
+   #with open("output.json", "w") as outfile:
+   #   outfile.write(json.dumps(details_json,indent=4))
 
    outputcount = len(details_json['powerPorts'])-1 #count minus input
 
@@ -231,7 +231,7 @@ def incSinglePhase(ip,user,password,modelname,breaker,breakercnt,amps):
 
    outputcount = len(details_json['powerPorts'])-1 #count minus input
 
-   details_json = incBreaker(breaker,details_json,amps)
+   details_json = incBreaker(breaker,details_json,amps,breakercnt)
 
    with open("example.json", "w") as outfile:
       outfile.write(json.dumps(details_json,indent=4))
@@ -300,7 +300,7 @@ def groupLeg(legoption,details_json,groupsize,amps,singlephasevolt):
    return details_json
 
 
-#Needs fix
+
 def incBreaker(breaker,details_json,amps,breakercnt):
    outputcount = len(details_json['powerPorts'])
    loopcount = int(int(breakercnt)/3)
@@ -308,14 +308,13 @@ def incBreaker(breaker,details_json,amps,breakercnt):
    if(breaker == True):
       for x in range(1,outputcount,smallloopsize):
          b = int(((x/smallloopsize)*3)+1)
-         for y in range(x,outputcount):
-            if(details_json['powerPorts'][y]['phaseLegs'] == "AB" or details_json['powerPorts'][y]['phaseLegs'] == "A"):
-               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b).zfill(2)
-               details_json['powerPorts'][y]['fuseBreakerAmps'] = amps
-            if(details_json['powerPorts'][y]['phaseLegs'] == "BC" or details_json['powerPorts'][y]['phaseLegs'] == "B"):
-               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+1).zfill(2)
-            if(details_json['powerPorts'][y]['phaseLegs'] == "CA" or details_json['powerPorts'][y]['phaseLegs'] == "C"):
-               details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b+2).zfill(2)
+         for y in range(x,x+smallloopsize,3):
+            details_json['powerPorts'][y]['fuseBreakerName'] = "CB"+str(b).zfill(2)
+            details_json['powerPorts'][y]['fuseBreakerAmps'] = amps
+            details_json['powerPorts'][y+1]['fuseBreakerName'] = "CB"+str(b+1).zfill(2)
+            details_json['powerPorts'][y+1]['fuseBreakerAmps'] = amps
+            details_json['powerPorts'][y+2]['fuseBreakerName'] = "CB"+str(b+2).zfill(2)
+            details_json['powerPorts'][y+2]['fuseBreakerAmps'] = amps
    if(breaker == False):
       for x in range(1,outputcount):
          try:
@@ -430,8 +429,6 @@ file_list_column = [
 
 window = sg.Window("Model PDU Phase Breaker Fix",file_list_column)
 
-#Makes up event statements
-#TODO: Allow turning off modifying phase or breaker
 while True:
 
    event, values = window.read()
