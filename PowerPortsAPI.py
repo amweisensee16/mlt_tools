@@ -91,6 +91,9 @@ def incrementModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption)
 
    details_json = getModelInfo(auth,ip,modelID)
 
+   if(details_json['powerPorts'][0]['phase'] == "Single Phase (3-Wire)"):
+      return "Wrong Phase Type"
+
    details_json = incLeg(legoption,details_json,singlephasevolt)
 
    details_json = followBreaker(breaker,details_json,breakercnt)
@@ -129,17 +132,17 @@ def groupModel(ip,user,password,modelname,breaker,breakercnt,amps,legoption,grou
 
    #with open("output.json", "w") as outfile:
    #   outfile.write(json.dumps(details_json,indent=4))
-
+   if(details_json['powerPorts'][0]['phase'] == "Single Phase (3-Wire)"):
+      return "Wrong Phase Type"
    outputcount = len(details_json['powerPorts'])-1 #count minus input
 
    if outputcount%groupsize != 0:
       print(outputcount,' ',groupsize)
       return "Invalid Group Size"
 
-   #Least messy/indented for loop
    #With breakers
    details_json = groupLeg(legoption,details_json,groupsize,amps,singlephasevolt)
-
+   
    #Does the circuit Breakers
    #TODO Change to grouping
 
@@ -448,6 +451,8 @@ while True:
          window['-OUTPUT-'].update("Couldn't Find model") 
       elif response == "Invalid Group Size":
          window['-OUTPUT-'].update("Invalid Group Size") 
+      elif response == "Wrong Phase Type":
+         window['-OUTPUT-'].update("Wrong Phase Type") 
       elif response.status_code == 200:
          window['-OUTPUT-'].update("Changes Made")
       elif response.status_code == 400:
