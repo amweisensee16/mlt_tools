@@ -1,9 +1,9 @@
 This script is for PDUs with nasty patterns that can not be bulk created.
 
 Supports:
-Alternating Phase Legs
-Grouped Phase Legs
-Alternating Circuit Breakers
+Alternating Phase Legs,
+Grouped Phase Legs,
+Alternating Circuit Breakers,
 Grouping Circuit Breakers
 
 
