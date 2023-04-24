@@ -1,5 +1,11 @@
-This script can be used when PDU has an alternating phase leg or grouping phase leg pattern. It was also will also auto do circuit breakers.
-It also supports single phase just for circuit breakers grouping/incrementing.
+This script is for PDUs with nasty patterns that can not be bulk created.
+
+Supports:
+Alternating Phase Legs,
+Grouped Phase Legs,
+Alternating Circuit Breakers,
+Grouping Circuit Breakers
+
 
 **PORTS MUST ALREADY BE MADE**
 
